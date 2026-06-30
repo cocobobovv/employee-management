@@ -6,3 +6,4 @@ instance/
 .DS_Store
 *.db
 *.xlsx
+*.xls
