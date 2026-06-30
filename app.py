@@ -311,11 +311,41 @@ def api_update(id: int) -> Response:
         return jsonify({'code': 400, 'message': '请求体不能为空'}), 400
 
     try:
-        # 验证提供的数据
-        valid, errors = _validate_employee_data(data)
-        if not valid:
-            msg = '；'.join(errors.values())
-            return jsonify({'code': 400, 'message': msg}), 400
+        # 验证提供的数据（仅检查实际传入的字段）
+        single_field_errors: dict[str, str] = {}
+
+        if 'name' in data:
+            v = data['name']
+            if not v or not str(v).strip():
+                single_field_errors['name'] = '姓名不能为空'
+            elif len(str(v)) > 50:
+                single_field_errors['name'] = '姓名不能超过 50 个字符'
+        if 'gender' in data:
+            v = data['gender']
+            if v not in ('男', '女'):
+                single_field_errors['gender'] = '性别只能为「男」或「女」'
+        if 'age' in data:
+            try:
+                age_val = int(data['age'])
+                if age_val < 16 or age_val > 100:
+                    single_field_errors['age'] = '年龄必须在 16 到 100 之间'
+            except (ValueError, TypeError):
+                single_field_errors['age'] = '年龄必须是有效数字'
+        if 'birthplace' in data:
+            v = data['birthplace']
+            if not v or not str(v).strip():
+                single_field_errors['birthplace'] = '出生地不能为空'
+            elif len(str(v)) > 100:
+                single_field_errors['birthplace'] = '出生地不能超过 100 个字符'
+        if 'phone' in data and data['phone']:
+            if not _is_valid_phone(str(data['phone'])):
+                single_field_errors['phone'] = '电话格式不正确'
+        if 'email' in data and data['email']:
+            if not _is_valid_email(str(data['email'])):
+                single_field_errors['email'] = '邮箱格式不正确'
+
+        if single_field_errors:
+            return jsonify({'code': 400, 'message': '；'.join(single_field_errors.values())}), 400
 
         if 'name' in data:
             employee.name = data['name']
