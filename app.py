@@ -29,6 +29,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 csrf = CSRFProtect(app)
 
+# ──────────────────────────────────────────────
+#  自动创建数据库表（gunicorn/production 入口）
+# ──────────────────────────────────────────────
+with app.app_context():
+    db.create_all()
+
 
 # ══════════════════════════════════════════════
 #  Web 页面路由
