@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}员工管理系统{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👥</text></svg>">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="{{ url_for('index') }}" class="nav-brand">👥 员工管理系统</a>
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}">📋 员工列表</a>
+                <a href="{{ url_for('add') }}">➕ 新增员工</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 提示消息 -->
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- 主内容 -->
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 员工管理系统 &nbsp;|&nbsp; Built with Flask + SQLite</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}员工列表 — 员工管理系统{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>📋 员工列表</h1>
+    <div class="header-actions">
+        <a href="{{ url_for('export_csv') }}" class="btn btn-outline">📄 导出 CSV</a>
+        <a href="{{ url_for('export_excel') }}" class="btn btn-outline">📊 导出 Excel</a>
+        <a href="{{ url_for('add') }}" class="btn btn-primary">➕ 新增员工</a>
+    </div>
+</div>
+
+<!-- 搜索与筛选 -->
+<div class="search-bar">
+    <form method="GET" action="{{ url_for('index') }}" class="search-form">
+        <input type="text" name="q" placeholder="🔍 搜索姓名、出生地、部门..." value="{{ search_query }}" class="input search-input">
+        <select name="gender" class="input select-input">
+            <option value="">全部性别</option>
+            <option value="男" {{ 'selected' if gender_filter == '男' }}>男</option>
+            <option value="女" {{ 'selected' if gender_filter == '女' }}>女</option>
+        </select>
+        <select name="department" class="input select-input">
+            <option value="">全部部门</option>
+            {% for dept in departments %}
+                <option value="{{ dept }}" {{ 'selected' if dept_filter == dept }}>{{ dept }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">搜索</button>
+        <a href="{{ url_for('index') }}" class="btn btn-outline">重置</a>
+    </form>
+    <div class="result-count">共 <strong>{{ pagination.total }}</strong> 条记录</div>
+</div>
+
+<!-- 员工表格 -->
+{% if employees %}
+<div class="table-wrapper">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>编号</th>
+                <th>姓名</th>
+                <th>性别</th>
+                <th>年龄</th>
+                <th>出生地</th>
+                <th>部门</th>
+                <th>职位</th>
+                <th>电话</th>
+                <th>入职日期</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in employees %}
+            <tr>
+                <td>{{ emp.id }}</td>
+                <td><strong>{{ emp.name }}</strong></td>
+                <td>{{ emp.gender }}</td>
+                <td>{{ emp.age }}</td>
+                <td>{{ emp.birthplace }}</td>
+                <td>{{ emp.department or '-' }}</td>
+                <td>{{ emp.position or '-' }}</td>
+                <td>{{ emp.phone or '-' }}</td>
+                <td>{{ emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '-' }}</td>
+                <td class="action-btns">
+                    <a href="{{ url_for('edit', id=emp.id) }}" class="btn btn-sm btn-edit">✏️ 编辑</a>
+                    <form method="POST" action="{{ url_for('delete', id=emp.id) }}" style="display:inline;" onsubmit="return confirm('确定要删除员工「{{ emp.name }}」吗？');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-danger">🗑️ 删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- 分页 -->
+{% if pagination.pages > 1 %}
+<div class="pagination">
+    <span class="page-info">第 {{ pagination.page }} / {{ pagination.pages }} 页</span>
+    <div class="page-btns">
+        {% if pagination.has_prev %}
+        <a href="{{ url_for('index', page=pagination.prev_num, q=search_query, gender=gender_filter, department=dept_filter) }}" class="btn btn-sm btn-outline">‹ 上一页</a>
+        {% endif %}
+        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+                <a href="{{ url_for('index', page=p, q=search_query, gender=gender_filter, department=dept_filter) }}"
+                   class="btn btn-sm {{ 'btn-primary' if p == pagination.page else 'btn-outline' }}">{{ p }}</a>
+            {% else %}
+                <span class="page-ellipsis">…</span>
+            {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <a href="{{ url_for('index', page=pagination.next_num, q=search_query, gender=gender_filter, department=dept_filter) }}" class="btn btn-sm btn-outline">下一页 ›</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <h3>暂无员工数据</h3>
+    <p>
+        {% if search_query or gender_filter or dept_filter %}
+            没有符合条件的员工，试试其他搜索条件。
+        {% else %}
+            点击下方按钮添加第一位员工吧！
+        {% endif %}
+    </p>
+    <a href="{{ url_for('add') }}" class="btn btn-primary">➕ 新增员工</a>
+</div>
+{% endif %}
+
+{% endblock %}
