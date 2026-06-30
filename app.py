@@ -11,11 +11,11 @@ from datetime import date, datetime
 from typing import Optional
 
 from flask import (Flask, render_template, request, redirect,
-                   url_for, flash, jsonify, send_file, Response)
+                   url_for, flash, jsonify, send_file, Response, session)
 from flask_wtf.csrf import CSRFProtect
 from openpyxl import Workbook
 
-from models import db, Employee
+from models import db, Employee, User
 from sqlalchemy.exc import SQLAlchemyError
 
 app = Flask(__name__)
@@ -34,6 +34,65 @@ csrf = CSRFProtect(app)
 # ──────────────────────────────────────────────
 with app.app_context():
     db.create_all()
+    # 创建默认管理员（仅当没有用户时）
+    if not User.query.first():
+        admin = User(username='admin')
+        admin.set_password('admin123')
+        db.session.add(admin)
+        db.session.commit()
+        print('✅ 默认管理员已创建：admin / admin123')
+
+
+# ──────────────────────────────────────────────
+#  登录认证
+# ──────────────────────────────────────────────
+
+from functools import wraps
+
+
+def login_required(f):
+    """登录校验装饰器：未登录用户重定向到登录页"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """登录页面"""
+    # 已登录则跳转到首页
+    if 'user_id' in session:
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+
+        if not username or not password:
+            flash('❌ 请输入用户名和密码', 'danger')
+            return render_template('login.html')
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session['user_id'] = user.id
+            session['username'] = user.username
+            flash(f'✅ 欢迎回来，{user.username}！', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('❌ 用户名或密码错误', 'danger')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """登出"""
+    session.clear()
+    flash('✅ 已安全退出', 'success')
+    return redirect(url_for('login'))
 
 
 # ══════════════════════════════════════════════
@@ -41,6 +100,7 @@ with app.app_context():
 # ══════════════════════════════════════════════
 
 @app.route('/')
+@login_required
 def index() -> str:
     """员工列表首页，支持搜索和筛选"""
     search_query: str = request.args.get('q', '').strip()
@@ -86,6 +146,7 @@ def index() -> str:
 
 
 @app.route('/add', methods=['GET', 'POST'])
+@login_required
 def add() -> str:
     """新增员工"""
     if request.method == 'POST':
@@ -126,6 +187,7 @@ def add() -> str:
 
 
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
 def edit(id: int) -> str:
     """编辑员工信息"""
     employee = Employee.query.get_or_404(id)
@@ -162,6 +224,7 @@ def edit(id: int) -> str:
 
 
 @app.route('/delete/<int:id>', methods=['POST'])
+@login_required
 def delete(id: int) -> str:
     """删除员工"""
     employee = Employee.query.get_or_404(id)
@@ -175,6 +238,7 @@ def delete(id: int) -> str:
 
 
 @app.route('/export/csv')
+@login_required
 def export_csv() -> Response:
     """导出员工数据为 CSV"""
     employees = Employee.query.order_by(Employee.id).all()
@@ -197,6 +261,7 @@ def export_csv() -> Response:
 
 
 @app.route('/export/excel')
+@login_required
 def export_excel() -> Response:
     """导出员工数据为 Excel (.xlsx)"""
     employees = Employee.query.order_by(Employee.id).all()

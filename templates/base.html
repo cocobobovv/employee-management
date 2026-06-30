@@ -13,8 +13,12 @@
         <div class="container nav-container">
             <a href="{{ url_for('index') }}" class="nav-brand">👥 员工管理系统</a>
             <nav class="nav-links">
+                {% if session.user_id %}
                 <a href="{{ url_for('index') }}">📋 员工列表</a>
                 <a href="{{ url_for('add') }}">➕ 新增员工</a>
+                <span class="nav-user">👤 {{ session.username }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-logout">🚪 退出</a>
+                {% endif %}
             </nav>
         </div>
     </header>

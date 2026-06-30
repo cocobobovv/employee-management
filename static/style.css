@@ -394,3 +394,89 @@ a:hover {
     border-top: 1px solid var(--border);
     background: var(--card-bg);
 }
+
+/* ── 导航用户信息 ── */
+.nav-user {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border);
+}
+
+.btn-logout {
+    background: transparent;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    font-size: 0.8rem;
+}
+.btn-logout:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: var(--danger) !important;
+}
+
+/* ── 登录页面 ── */
+.login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 200px);
+    padding: 20px;
+}
+
+.login-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.login-icon {
+    font-size: 3.5rem;
+    margin-bottom: 12px;
+}
+
+.login-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.login-subtitle {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.login-form .form-group {
+    margin-bottom: 18px;
+}
+
+.login-form .btn-block {
+    width: 100%;
+    padding: 10px;
+    font-size: 1rem;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.login-footer p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}

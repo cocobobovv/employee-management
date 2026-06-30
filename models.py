@@ -1,13 +1,36 @@
 # -*- coding: utf-8 -*-
 """
-数据库模型 — 员工信息表
+数据库模型 — 员工信息表 & 用户表
 """
 from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import CheckConstraint, Enum as SAEnum
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
+
+
+class User(db.Model):
+    """管理员用户模型"""
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    username = db.Column(db.String(50), unique=True, nullable=False, comment='用户名')
+    password_hash = db.Column(db.String(256), nullable=False, comment='密码哈希')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),
+                           comment='创建时间')
+
+    def set_password(self, password: str) -> None:
+        """设置密码（自动加盐哈希）"""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """验证密码"""
+        return check_password_hash(self.password_hash, password)
+
+    def __repr__(self):
+        return f'<User {self.id}: {self.username}>'
 
 
 class Employee(db.Model):
