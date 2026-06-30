@@ -5,6 +5,7 @@
 <div class="page-header">
     <h1>📋 员工列表</h1>
     <div class="header-actions">
+        <a href="{{ url_for('import_employees') }}" class="btn btn-outline">📥 导入 Excel</a>
         <a href="{{ url_for('export_csv') }}" class="btn btn-outline">📄 导出 CSV</a>
         <a href="{{ url_for('export_excel') }}" class="btn btn-outline">📊 导出 Excel</a>
         <a href="{{ url_for('add') }}" class="btn btn-primary">➕ 新增员工</a>
@@ -14,7 +15,7 @@
 <!-- 搜索与筛选 -->
 <div class="search-bar">
     <form method="GET" action="{{ url_for('index') }}" class="search-form">
-        <input type="text" name="q" placeholder="🔍 搜索姓名、出生地、部门..." value="{{ search_query }}" class="input search-input">
+        <input type="text" name="q" placeholder="🔍 搜索姓名、岗位、班组..." value="{{ search_query }}" class="input search-input">
         <select name="gender" class="input select-input">
             <option value="">全部性别</option>
             <option value="男" {{ 'selected' if gender_filter == '男' }}>男</option>
@@ -38,30 +39,26 @@
     <table class="table">
         <thead>
             <tr>
-                <th>编号</th>
                 <th>姓名</th>
                 <th>性别</th>
+                <th>岗位/职务</th>
+                <th>现班组/井站</th>
                 <th>年龄</th>
                 <th>出生地</th>
-                <th>部门</th>
-                <th>职位</th>
-                <th>电话</th>
-                <th>入职日期</th>
+                <th>联系电话</th>
                 <th>操作</th>
             </tr>
         </thead>
         <tbody>
             {% for emp in employees %}
             <tr>
-                <td>{{ emp.id }}</td>
                 <td><strong>{{ emp.name }}</strong></td>
                 <td>{{ emp.gender }}</td>
-                <td>{{ emp.age }}</td>
-                <td>{{ emp.birthplace }}</td>
-                <td>{{ emp.department or '-' }}</td>
                 <td>{{ emp.position or '-' }}</td>
+                <td>{{ emp.team_station or '-' }}</td>
+                <td>{{ emp.age or '-' }}</td>
+                <td>{{ emp.birthplace or '-' }}</td>
                 <td>{{ emp.phone or '-' }}</td>
-                <td>{{ emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else '-' }}</td>
                 <td class="action-btns">
                     <a href="{{ url_for('edit', id=emp.id) }}" class="btn btn-sm btn-edit">✏️ 编辑</a>
                     <form method="POST" action="{{ url_for('delete', id=emp.id) }}" style="display:inline;" onsubmit="return confirm('确定要删除员工「{{ emp.name }}」吗？');">

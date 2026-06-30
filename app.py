@@ -13,7 +13,7 @@ from typing import Optional
 from flask import (Flask, render_template, request, redirect,
                    url_for, flash, jsonify, send_file, Response, session)
 from flask_wtf.csrf import CSRFProtect
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 from models import db, Employee, User
 from sqlalchemy.exc import SQLAlchemyError
@@ -40,7 +40,7 @@ with app.app_context():
         admin.set_password('admin123')
         db.session.add(admin)
         db.session.commit()
-        print('✅ 默认管理员已创建：admin / admin123')
+        print('默认管理员已创建：admin / admin123 请及时修改密码！')
 
 
 # ──────────────────────────────────────────────
@@ -114,9 +114,9 @@ def index() -> str:
     if search_query:
         query = query.filter(
             Employee.name.contains(search_query) |
-            Employee.birthplace.contains(search_query) |
-            Employee.department.contains(search_query) |
-            Employee.position.contains(search_query)
+            Employee.team_station.contains(search_query) |
+            Employee.position.contains(search_query) |
+            Employee.department.contains(search_query)
         )
 
     if gender_filter:
@@ -167,12 +167,15 @@ def add() -> str:
             employee = Employee(
                 name=request.form['name'].strip(),
                 gender=request.form['gender'].strip(),
-                age=int(request.form['age']),
-                birthplace=request.form['birthplace'].strip(),
-                department=request.form.get('department', '').strip(),
-                position=request.form.get('position', '').strip(),
-                phone=request.form.get('phone', '').strip(),
-                email=request.form.get('email', '').strip(),
+                age=_parse_int(request.form.get('age')),
+                birthplace=request.form.get('birthplace', '').strip() or None,
+                department=request.form.get('department', '').strip() or None,
+                position=request.form.get('position', '').strip() or None,
+                team_station=request.form.get('team_station', '').strip() or None,
+                work_content=request.form.get('work_content', '').strip() or None,
+                remarks=request.form.get('remarks', '').strip() or None,
+                phone=request.form.get('phone', '').strip() or None,
+                email=request.form.get('email', '').strip() or None,
                 hire_date=hire_date,
             )
             db.session.add(employee)
@@ -202,12 +205,15 @@ def edit(id: int) -> str:
         try:
             employee.name = request.form['name'].strip()
             employee.gender = request.form['gender'].strip()
-            employee.age = int(request.form['age'])
-            employee.birthplace = request.form['birthplace'].strip()
-            employee.department = request.form.get('department', '').strip()
-            employee.position = request.form.get('position', '').strip()
-            employee.phone = request.form.get('phone', '').strip()
-            employee.email = request.form.get('email', '').strip()
+            employee.age = _parse_int(request.form.get('age'))
+            employee.birthplace = request.form.get('birthplace', '').strip() or None
+            employee.department = request.form.get('department', '').strip() or None
+            employee.position = request.form.get('position', '').strip() or None
+            employee.team_station = request.form.get('team_station', '').strip() or None
+            employee.work_content = request.form.get('work_content', '').strip() or None
+            employee.remarks = request.form.get('remarks', '').strip() or None
+            employee.phone = request.form.get('phone', '').strip() or None
+            employee.email = request.form.get('email', '').strip() or None
             hire_date, date_err = _parse_date(request.form.get('hire_date'))
             if date_err:
                 flash(f'❌ {date_err}', 'danger')
@@ -246,13 +252,15 @@ def export_csv() -> Response:
     writer = csv.writer(output)
 
     # 表头
-    writer.writerow(['编号', '姓名', '性别', '年龄', '出生地',
-                     '部门', '职位', '电话', '邮箱', '入职日期'])
+    writer.writerow(['编号', '姓名', '性别', '岗位/职务', '现班组/井站',
+                     '分管工作内容', '备注', '年龄', '出生地',
+                     '部门', '电话', '邮箱', '入职日期'])
 
     for emp in employees:
         writer.writerow([
-            emp.id, emp.name, emp.gender, emp.age, emp.birthplace,
-            emp.department, emp.position, emp.phone, emp.email,
+            emp.id, emp.name, emp.gender, emp.position, emp.team_station,
+            emp.work_content, emp.remarks, emp.age, emp.birthplace,
+            emp.department, emp.phone, emp.email,
             emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else ''
         ])
 
@@ -270,14 +278,16 @@ def export_excel() -> Response:
     ws.title = '员工信息'
 
     # 表头
-    headers = ['编号', '姓名', '性别', '年龄', '出生地',
-               '部门', '职位', '电话', '邮箱', '入职日期']
+    headers = ['编号', '姓名', '性别', '岗位/职务', '现班组/井站',
+               '分管工作内容', '备注', '年龄', '出生地',
+               '部门', '电话', '邮箱', '入职日期']
     ws.append(headers)
 
     for emp in employees:
         ws.append([
-            emp.id, emp.name, emp.gender, emp.age, emp.birthplace,
-            emp.department, emp.position, emp.phone, emp.email,
+            emp.id, emp.name, emp.gender, emp.position, emp.team_station,
+            emp.work_content, emp.remarks, emp.age, emp.birthplace,
+            emp.department, emp.phone, emp.email,
             emp.hire_date.strftime('%Y-%m-%d') if emp.hire_date else ''
         ])
 
@@ -295,6 +305,98 @@ def export_excel() -> Response:
         as_attachment=True,
         download_name='employees.xlsx'
     )
+
+
+@app.route('/import', methods=['GET', 'POST'])
+@login_required
+def import_employees():
+    """导入 Excel 员工数据"""
+    if request.method == 'POST':
+        file = request.files.get('file')
+        if not file or file.filename == '':
+            flash('❌ 请选择要导入的 Excel 文件', 'danger')
+            return render_template('import.html')
+
+        # 判断文件格式
+        filename = file.filename.lower()
+        if filename.endswith('.xlsx'):
+            try:
+                wb = load_workbook(file)
+            except Exception:
+                flash('❌ 无法读取 .xlsx 文件，请检查格式', 'danger')
+                return render_template('import.html')
+        elif filename.endswith('.xls'):
+            try:
+                # 用 xlrd 读取旧格式
+                import xlrd
+                xls_wb = xlrd.open_workbook(file_contents=file.read())
+                xls_ws = xls_wb.sheet_by_index(0)
+                wb = _xlrd_to_openpyxl(xls_ws)
+            except Exception as e:
+                flash(f'❌ 无法读取 .xls 文件：{str(e)}', 'danger')
+                return render_template('import.html')
+        else:
+            flash('❌ 仅支持 .xls 和 .xlsx 格式', 'danger')
+            return render_template('import.html')
+
+        try:
+            ws = wb.active
+            header_row = [str(c.value or '').strip() for c in ws[1]]
+
+            # 字段名映射（支持中英文表头）
+            field_map = _build_field_map(header_row)
+
+            success_count = 0
+            error_count = 0
+            errors_detail = []
+
+            for row_idx in range(2, ws.max_row + 1):
+                row_data = {}
+                for col_idx, field_name in field_map.items():
+                    cell = ws.cell(row=row_idx, column=col_idx + 1)
+                    row_data[field_name] = str(cell.value).strip() if cell.value is not None else ''
+
+                name = row_data.get('name', '')
+                if not name:
+                    error_count += 1
+                    errors_detail.append(f'第 {row_idx} 行：姓名为空')
+                    continue
+
+                try:
+                    employee = Employee(
+                        name=name,
+                        gender=row_data.get('gender', ''),
+                        age=_parse_int(row_data.get('age')),
+                        birthplace=row_data.get('birthplace') or None,
+                        department=row_data.get('department') or None,
+                        position=row_data.get('position') or None,
+                        team_station=row_data.get('team_station') or None,
+                        work_content=row_data.get('work_content') or None,
+                        remarks=row_data.get('remarks') or None,
+                        phone=row_data.get('phone') or None,
+                        email=row_data.get('email') or None,
+                        hire_date=_parse_date(row_data.get('hire_date'))[0],
+                    )
+                    db.session.add(employee)
+                    success_count += 1
+                except Exception as e:
+                    error_count += 1
+                    errors_detail.append(f'第 {row_idx} 行（{name}）：{str(e)}')
+
+            db.session.commit()
+            msg = f'✅ 导入完成：成功 {success_count} 条'
+            if error_count:
+                msg += f'，失败 {error_count} 条'
+                for err in errors_detail[:5]:
+                    msg += f'<br>  - {err}'
+                if len(errors_detail) > 5:
+                    msg += f'<br>  - ...及其他 {len(errors_detail) - 5} 条错误'
+            flash(msg, 'success' if error_count == 0 else 'warning')
+            return redirect(url_for('index'))
+        except Exception as e:
+            flash(f'❌ 导入失败：{str(e)}', 'danger')
+
+    return render_template('import.html')
 
 
 # ══════════════════════════════════════════════
@@ -350,12 +452,15 @@ def api_create() -> Response:
         employee = Employee(
             name=data['name'],
             gender=data['gender'],
-            age=int(data['age']),
-            birthplace=data['birthplace'],
-            department=data.get('department', ''),
-            position=data.get('position', ''),
-            phone=data.get('phone', ''),
-            email=data.get('email', ''),
+            age=_parse_int(data.get('age')),
+            birthplace=data.get('birthplace') or None,
+            department=data.get('department') or None,
+            position=data.get('position') or None,
+            team_station=data.get('team_station') or None,
+            work_content=data.get('work_content') or None,
+            remarks=data.get('remarks') or None,
+            phone=data.get('phone') or None,
+            email=data.get('email') or None,
             hire_date=hire_date,
         )
         db.session.add(employee)
@@ -417,13 +522,19 @@ def api_update(id: int) -> Response:
         if 'gender' in data:
             employee.gender = data['gender']
         if 'age' in data:
-            employee.age = int(data['age'])
+            employee.age = _parse_int(data['age'])
         if 'birthplace' in data:
             employee.birthplace = data['birthplace']
         if 'department' in data:
             employee.department = data['department']
         if 'position' in data:
             employee.position = data['position']
+        if 'team_station' in data:
+            employee.team_station = data['team_station']
+        if 'work_content' in data:
+            employee.work_content = data['work_content']
+        if 'remarks' in data:
+            employee.remarks = data['remarks']
         if 'phone' in data:
             employee.phone = data['phone']
         if 'email' in data:
@@ -480,17 +591,16 @@ def _validate_employee_data(data):
         errors['gender'] = '性别只能为「男」或「女」'
 
     age_raw = data.get('age', '')
-    try:
-        age = int(age_raw)
-        if age < 16 or age > 100:
-            errors['age'] = '年龄必须在 16 到 100 之间'
-    except (ValueError, TypeError):
-        errors['age'] = '年龄必须是有效数字'
+    if age_raw:
+        try:
+            age = int(age_raw)
+            if age < 16 or age > 100:
+                errors['age'] = '年龄必须在 16 到 100 之间'
+        except (ValueError, TypeError):
+            errors['age'] = '年龄必须是有效数字'
 
     birthplace = data.get('birthplace', '').strip()
-    if not birthplace:
-        errors['birthplace'] = '出生地不能为空'
-    elif len(birthplace) > 100:
+    if birthplace and len(birthplace) > 100:
         errors['birthplace'] = '出生地不能超过 100 个字符'
 
     phone = data.get('phone', '').strip()
@@ -534,6 +644,62 @@ def _parse_date(date_str: Optional[str]) -> tuple[Optional[date], Optional[str]]
         return None, '日期格式不正确（应为 YYYY-MM-DD）'
 
 
+def _build_field_map(header_row):
+    """将 Excel 表头映射到 Employee 模型字段名"""
+    mapping = {
+        '姓名': 'name', 'name': 'name',
+        '性别': 'gender', 'gender': 'gender',
+        '年龄': 'age', 'age': 'age',
+        '出生地': 'birthplace', 'birthplace': 'birthplace',
+        '部门': 'department', 'department': 'department',
+        '岗位': 'position', '职务': 'position',
+        '岗位/职务': 'position', '职位': 'position', 'position': 'position',
+        '现班组': 'team_station', '井站': 'team_station',
+        '现班组/井站': 'team_station', '班组': 'team_station', 'team_station': 'team_station',
+        '分管工作内容': 'work_content', '工作内容': 'work_content',
+        'work_content': 'work_content',
+        '备注': 'remarks', 'remark': 'remarks', 'remarks': 'remarks',
+        '电话': 'phone', '联系电话': 'phone', 'phone': 'phone',
+        '邮箱': 'email', '电子邮箱': 'email', 'email': 'email',
+        '入职日期': 'hire_date', '入职时间': 'hire_date', 'hire_date': 'hire_date',
+        '序号': None, 'id': None, '编号': None,
+    }
+    field_map = {}
+    for col_idx, header in enumerate(header_row):
+        key = header.strip().replace(' ', '')
+        if key in mapping and mapping[key] is not None:
+            field_map[col_idx] = mapping[key]
+        # 中英文分号分隔
+        elif '/' in key:
+            for part in key.split('/'):
+                part = part.strip()
+                if part in mapping and mapping[part] is not None:
+                    field_map[col_idx] = mapping[part]
+                    break
+    return field_map
+
+
+def _xlrd_to_openpyxl(xls_ws):
+    """将 xlrd 的 sheet 转换为 openpyxl 的 Workbook"""
+    wb = Workbook()
+    ws = wb.active
+    for row_idx in range(xls_ws.nrows):
+        for col_idx in range(xls_ws.ncols):
+            cell = xls_ws.cell(row_idx, col_idx)
+            ws.cell(row=row_idx + 1, column=col_idx + 1, value=cell.value)
+    return wb
+
+
+def _parse_int(value):
+    """安全地解析整数，失败返回 None"""
+    if not value:
+        return None
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        return None
+
+
 def _send_csv_response(output: io.StringIO, filename: str) -> Response:
     """将 CSV 字符串流作为附件响应返回"""
     output_bytes = io.BytesIO(output.getvalue().encode('utf-8-sig'))
@@ -571,7 +737,7 @@ def server_error(e) -> tuple[str, int]:
 def init_db() -> None:
     """初始化数据库（创建所有表）"""
     db.create_all()
-    print('✅ 数据库表已创建。')
+    print('数据库表已创建。')
 
 
 # ──────────────────────────────────────────────

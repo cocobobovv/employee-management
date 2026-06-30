@@ -480,3 +480,46 @@ a:hover {
     font-size: 0.8rem;
     color: var(--text-secondary);
 }
+
+/* ── 导入页面 ── */
+.import-info {
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.import-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.import-info ul {
+    padding-left: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.8;
+}
+
+.import-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0;
+}
+
+.field-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.import-note {
+    font-size: 0.85rem;
+    color: var(--warning);
+    margin-top: 8px;
+}

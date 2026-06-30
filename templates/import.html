@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}导入员工数据 — 员工管理系统{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>📥 导入员工数据</h1>
+    <a href="{{ url_for('index') }}" class="btn btn-outline">← 返回列表</a>
+</div>
+
+<div class="form-card" style="max-width: 600px;">
+    <div class="import-info">
+        <h3>导入说明</h3>
+        <ul>
+            <li>支持 <strong>.xlsx</strong> 和 <strong>.xls</strong> 格式</li>
+            <li>表头支持中英文，系统会自动识别以下字段：</li>
+        </ul>
+        <div class="import-fields">
+            <span class="field-tag">姓名 <span class="required">*</span></span>
+            <span class="field-tag">性别</span>
+            <span class="field-tag">岗位/职务</span>
+            <span class="field-tag">现班组/井站</span>
+            <span class="field-tag">分管工作内容</span>
+            <span class="field-tag">备注</span>
+            <span class="field-tag">年龄</span>
+            <span class="field-tag">出生地</span>
+            <span class="field-tag">部门</span>
+            <span class="field-tag">联系电话</span>
+            <span class="field-tag">邮箱</span>
+            <span class="field-tag">入职日期</span>
+        </div>
+        <p class="import-note">⚠️ 姓名为必填字段，缺少姓名的行将被跳过。</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('import_employees') }}" enctype="multipart/form-data" class="employee-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label for="file">选择 Excel 文件</label>
+            <input type="file" id="file" name="file" class="input" accept=".xlsx,.xls" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">📥 开始导入</button>
+            <a href="{{ url_for('index') }}" class="btn btn-outline">取消</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

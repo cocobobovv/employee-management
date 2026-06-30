@@ -24,35 +24,56 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="age">年龄 <span class="required">*</span></label>
-                <input type="number" id="age" name="age" class="input" required min="16" max="100" placeholder="例：28">
+                <label for="position">岗位/职务</label>
+                <input type="text" id="position" name="position" class="input" placeholder="例：所长、技术员">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="birthplace">出生地 <span class="required">*</span></label>
-                <input type="text" id="birthplace" name="birthplace" class="input" required placeholder="例：北京市朝阳区">
+                <label for="team_station">现班组/井站</label>
+                <input type="text" id="team_station" name="team_station" class="input" placeholder="例：所领导、采气一队">
             </div>
+            <div class="form-group">
+                <label for="age">年龄</label>
+                <input type="number" id="age" name="age" class="input" min="16" max="100" placeholder="例：28">
+            </div>
+            <div class="form-group">
+                <label for="birthplace">出生地</label>
+                <input type="text" id="birthplace" name="birthplace" class="input" placeholder="例：北京市朝阳区">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="grid-column: span 3;">
+                <label for="work_content">分管工作内容</label>
+                <textarea id="work_content" name="work_content" class="input" rows="3" placeholder="请填写分管工作内容"></textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group" style="grid-column: span 3;">
+                <label for="remarks">备注</label>
+                <textarea id="remarks" name="remarks" class="input" rows="2" placeholder="备注信息"></textarea>
+            </div>
+        </div>
+
+        <div class="form-row">
             <div class="form-group">
                 <label for="department">部门</label>
                 <input type="text" id="department" name="department" class="input" placeholder="例：技术部">
             </div>
-            <div class="form-group">
-                <label for="position">职位</label>
-                <input type="text" id="position" name="position" class="input" placeholder="例：软件工程师">
-            </div>
-        </div>
-
-        <div class="form-row">
             <div class="form-group">
                 <label for="phone">联系电话</label>
                 <input type="tel" id="phone" name="phone" class="input" placeholder="例：13800000000">
             </div>
             <div class="form-group">
                 <label for="email">电子邮箱</label>
-                <input type="email" id="email" name="email" class="input" placeholder="例：zhangsan@company.com">
+                <input type="email" id="email" name="email" class="input" placeholder="例：name@company.com">
             </div>
+        </div>
+
+        <div class="form-row">
             <div class="form-group">
                 <label for="hire_date">入职日期</label>
                 <input type="date" id="hire_date" name="hire_date" class="input">
