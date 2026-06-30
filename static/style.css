@@ -523,3 +523,62 @@ a:hover {
     color: var(--warning);
     margin-top: 8px;
 }
+
+/* ── 移动端适配 ── */
+@media (max-width: 480px) {
+    .container { padding: 0 12px; }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 16px 0 12px;
+    }
+    .page-header h1 { font-size: 1.2rem; }
+    .header-actions { width: 100%; }
+    .header-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.8rem;
+        padding: 6px 10px;
+    }
+
+    .search-form {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .search-input, .select-input { width: 100%; min-width: 0; }
+
+    .table-wrapper { margin: 0 -12px; border-radius: 0; }
+    .table { font-size: 0.8rem; }
+    .table th, .table td { padding: 8px 8px; }
+    .action-btns { flex-direction: column; gap: 2px; }
+    .action-btns .btn { font-size: 0.7rem; padding: 4px 8px; }
+
+    .employee-form .form-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .form-card { padding: 16px; }
+
+    .pagination {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-container {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 8px 0;
+    }
+    .nav-links {
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+    }
+    .nav-links a { font-size: 0.8rem; padding: 6px 10px; }
+    .nav-user { border-right: none; padding: 6px 10px; }
+
+    .login-card { padding: 28px 20px; }
+}
